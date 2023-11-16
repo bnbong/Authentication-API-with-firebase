@@ -1,11 +1,11 @@
 .DS_Store
 .idea
 venv
-.env
+src/.env
 /migration
-alembic.ini
+src/alembic.ini
 delivers-travels-firebase-adminsdk-cw23j-42854f6140.json
-src/app/msng/app/delivers-travels-firebase-adminsdk-cw23j-42854f6140.json
+src/app/app/delivers-travels-firebase-adminsdk-cw23j-42854f6140.json
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -128,7 +128,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+src/.env
 .venv
 env/
 venv/

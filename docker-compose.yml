@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  mariadb:
+    image: mariadb:10.5.8
+    container_name: auth-mariadb
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=auth-db
+      - MYSQL_USER=bnbong
+      - MYSQL_PASSWORD=password
+    volumes:
+      - auth-mariadb-data:/var/lib/mysql
+#    networks:
+#      - auth-network
+
+  redis:
+    image: redis:5.0.5-alpine
+    container_name: auth-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - auth-redis-data:/data
+#    networks:
+#      - auth-network
+
+  fastapi:
+    build: .
+    container_name: auth-fastapi-app
+    ports:
+      - "18000:18000"
+    depends_on:
+      - redis
+#    networks:
+#      - auth-network
+#
+#networks:
+#  auth-network:
+#    external: true
+
+volumes:
+  auth-redis-data:
+    external: true
+  auth-mariadb-data:
+    external: true

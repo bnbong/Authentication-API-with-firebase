@@ -2,7 +2,5 @@ from pydantic import BaseModel
 
 
 class OrmBaseModel(BaseModel):
-
-    class Config:
-
+    class ConfigDict:
         orm_mode = True
