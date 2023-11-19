@@ -1,13 +1,16 @@
 import os
+import secrets
 import requests
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import RedirectResponse
-from fastapi.security import OAuth2AuthorizationCodeBearer
+
+from firebase_admin import auth as firebase_auth
+import google_auth_oauthlib.flow
 
 from dotenv import load_dotenv
 
-from app.schemas.auth import VerifyTokenResponse, DelTokenResponse
+from app.schemas.auth import VerifyTokenResponse
 from app.router.auth.verify import verify_token
 from app.crud.token import findByToken, delToken, createToken
 from app.utils.log import logger
@@ -18,45 +21,72 @@ load_dotenv()
 auth_router = APIRouter(prefix="/auth")
 
 
-oauth2_scheme = OAuth2AuthorizationCodeBearer(
-    authorizationUrl="https://accounts.google.com/o/oauth2/auth",
-    tokenUrl="https://oauth2.googleapis.com/token",
-    refreshUrl="https://oauth2.googleapis.com/token",
-    scopes={"openid": "OpenID Connect scope"},
-)
-
-
 @auth_router.get("/login")
 def login():
     client_id = os.getenv("GOOGLE_CLIENT_ID")
     redirect_uri = os.getenv("GOOGLE_REDIRECT_URI")
     scope = "https://www.googleapis.com/auth/userinfo.email"
     response_type = "code"
+    state = secrets.token_urlsafe()
 
     return RedirectResponse(
-        url=f"https://accounts.google.com/o/oauth2/auth?response_type={response_type}&client_id={client_id}&redirect_uri={redirect_uri}&scope={scope}"
+        url=f"https://accounts.google.com/o/oauth2/auth?response_type={response_type}&client_id={client_id}&redirect_uri={redirect_uri}&scope={scope}&state={state}"
     )
 
 
-@auth_router.get("/auth")
-def auth(code: str = Depends(oauth2_scheme)):
-    # Google로부터 인증 코드를 받아 ID 토큰으로 교환
-    data = {
-        "code": code,
-        "client_id": os.getenv("GOOGLE_CLIENT_ID"),
-        "client_secret": os.getenv("GOOGLE_CLIENT_SECRET"),
-        "redirect_uri": os.getenv("GOOGLE_REDIRECT_URI"),
-        "grant_type": "authorization_code",
+async def get_google_user_info(code: str):
+    scopes = ["openid", "https://www.googleapis.com/auth/userinfo.email"]
+    flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+        os.getenv("GOOGLE_CLIENT_KEY"), scopes=scopes)
+    flow.redirect_uri = os.getenv("GOOGLE_REDIRECT_URI")
+    flow.fetch_token(code=code)
+
+    credentials = flow.credentials
+    return credentials.id_token
+
+
+def create_firebase_custom_token(uid: str):
+    firebase_auth.get_user(uid)
+    firebase_custom_token = firebase_auth.create_custom_token(uid)
+    return firebase_custom_token
+
+
+async def get_firebase_id_token(firebase_custom_token: bytes):
+    firebase_api_key = os.getenv("FIREBASE_API_KEY")
+    request_data = {
+        "token": firebase_custom_token,
+        "returnSecureToken": True
     }
-    response = requests.post(oauth2_scheme.tokenUrl, data=data)
+    response = requests.post(
+        f"https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyCustomToken?key={firebase_api_key}",
+        data=request_data
+    )
     response_data = response.json()
+    return response_data.get("idToken")
 
-    if "id_token" not in response_data:
-        raise HTTPException(status_code=400, detail="Google ID Token not found")
 
-    # Firebase Admin을 사용하여 ID 토큰 검증
-    decoded_token = auth.verify_id_token(response_data["id_token"])
-    return {"user_id_token": decoded_token["uid"]}
+@auth_router.get("/auth")
+async def auth(request: Request):
+    # URL 쿼리 파라미터에서 인증 코드 추출
+    code = request.query_params.get("code")
+    if not code:
+        raise HTTPException(status_code=400, detail="Authorization code not provided")
+
+    # Google 사용자 인증 정보 얻기
+    id_token = await get_google_user_info(code)
+
+    # TODO: google id_token의 유저의 uid, 혹은 email 정보를 통해 Firebase Custom Token 생성
+
+    # Firebase 커스텀 토큰 생성
+    uid = os.getenv('TEST_USER_UID')  # TODO: 실제 사용자 UID를 동적으로 처리하도록 수정
+    firebase_custom_token = create_firebase_custom_token(uid)
+
+    # Firebase ID 토큰 반환
+    firebase_id_token = await get_firebase_id_token(firebase_custom_token)
+    if not firebase_id_token:
+        raise HTTPException(status_code=500, detail="Failed to exchange custom token")
+
+    return {"firebase_id_token": firebase_id_token}
 
 
 @auth_router.get("/verify/{firebase_token}", response_model=VerifyTokenResponse)

@@ -16,7 +16,7 @@ from pydantic_settings import BaseSettings
 
 class AppSettings(BaseSettings):
     DATABASE_URI: AnyUrl = Field(
-        default="mysql+pymysql://bnbong:password@localhost:3307/auth-db",
+        default="mysql+aiomysql://bnbong:password@localhost:3307/auth-db",
         description="MariaDB connection URI.",
     )
     DATABASE_OPTIONS: Dict[str, Any] = Field(
