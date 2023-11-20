@@ -41,8 +41,9 @@ def login():
 
 async def get_google_user_info(code: str):
     scopes = ["openid", "https://www.googleapis.com/auth/userinfo.email"]
+    google_key_path = os.path.join(os.path.dirname(__file__), '../../../', os.getenv("GOOGLE_CLIENT_KEY"))
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
-        os.getenv("GOOGLE_CLIENT_KEY"), scopes=scopes)
+        google_key_path, scopes=scopes)
     flow.redirect_uri = os.getenv("GOOGLE_REDIRECT_URI")
     flow.fetch_token(code=code)
 

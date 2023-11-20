@@ -21,7 +21,8 @@ async def lifespan(app: FastAPI):
     try:
         print("Application startup...")
         print("Firebase admin initializing...")
-        cred = credentials.Certificate(os.getenv("FIRE_BASE_KEY"))
+        firebase_key_path = os.path.join(os.path.dirname(__file__), os.getenv("FIRE_BASE_KEY"))
+        cred = credentials.Certificate(firebase_key_path)
         firebase_admin.initialize_app(cred)
         print("Firebase admin setup complete")
         # print("Create connection and setting up database")
