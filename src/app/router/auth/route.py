@@ -1,6 +1,8 @@
 import os
+import json
 import secrets
 import requests
+import base64
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import RedirectResponse
@@ -21,6 +23,9 @@ load_dotenv()
 auth_router = APIRouter(prefix="/auth")
 
 
+# --------------------------------------------------------------------------
+# Google OAuth 로그인 및 Firebase ID 토큰 발급
+# --------------------------------------------------------------------------
 @auth_router.get("/login")
 def login():
     client_id = os.getenv("GOOGLE_CLIENT_ID")
@@ -75,10 +80,12 @@ async def auth(request: Request):
     # Google 사용자 인증 정보 얻기
     id_token = await get_google_user_info(code)
 
-    # TODO: google id_token의 유저의 uid, 혹은 email 정보를 통해 Firebase Custom Token 생성
+    decoded_token = base64.urlsafe_b64decode(id_token.split('.')[1] + '=' * (-len(id_token) % 4))
+    user_email = json.loads(decoded_token.decode('utf-8')).get('email')
 
     # Firebase 커스텀 토큰 생성
-    uid = os.getenv('TEST_USER_UID')  # TODO: 실제 사용자 UID를 동적으로 처리하도록 수정
+    firebase_user = firebase_auth.get_user_by_email(user_email)
+    uid = firebase_user.uid
     firebase_custom_token = create_firebase_custom_token(uid)
 
     # Firebase ID 토큰 반환
@@ -89,6 +96,9 @@ async def auth(request: Request):
     return {"firebase_id_token": firebase_id_token}
 
 
+# --------------------------------------------------------------------------
+# Firebase ID 토큰 검증 및 캐싱
+# --------------------------------------------------------------------------
 @auth_router.get("/verify/{firebase_token}", response_model=VerifyTokenResponse)
 async def authorization(firebase_token: str, rd=Depends(get_redis)):
     cache_check = findByToken(firebase_token, rd)
