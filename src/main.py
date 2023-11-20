@@ -7,7 +7,7 @@ import uvicorn
 from fastapi import FastAPI
 
 from app.router import api_v1_route
-from app.db.database import engine, Base
+# from app.db.database import engine, Base
 
 
 from firebase_admin import credentials
@@ -24,10 +24,10 @@ async def lifespan(app: FastAPI):
         cred = credentials.Certificate(os.getenv("FIRE_BASE_KEY"))
         firebase_admin.initialize_app(cred)
         print("Firebase admin setup complete")
-        print("Create connection and setting up database")
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-            print("DB connection created")
+        # print("Create connection and setting up database")
+        # async with engine.begin() as conn:
+        #     await conn.run_sync(Base.metadata.create_all)
+        #     print("DB connection created")
         yield
     finally:
         print("Application shutdown")

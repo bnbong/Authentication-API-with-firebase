@@ -12,11 +12,11 @@ import google_auth_oauthlib.flow
 
 from dotenv import load_dotenv
 
-from app.schemas.auth import VerifyTokenResponse
-from app.router.auth.verify import verify_token
-from app.crud.token import findByToken, delToken, createToken
-from app.utils.log import logger
-from app.db.redis import get_redis
+# from app.schemas.auth import VerifyTokenResponse
+# from app.router.auth.verify import verify_token
+# from app.crud.token import findByToken, delToken, createToken
+# from app.utils.log import logger
+# from app.db.redis import get_redis
 
 load_dotenv()
 
@@ -97,35 +97,35 @@ async def auth(request: Request):
 
 
 # --------------------------------------------------------------------------
-# Firebase ID 토큰 검증 및 캐싱
+# Firebase ID 토큰 검증 및 캐싱 (Redis를 활용하는 로직, 현재 버전에서는 사용X)
 # --------------------------------------------------------------------------
-@auth_router.get("/verify/{firebase_token}", response_model=VerifyTokenResponse)
-async def authorization(firebase_token: str, rd=Depends(get_redis)):
-    cache_check = findByToken(firebase_token, rd)
-
-    if cache_check is True:
-        return {"verify": True}
-
-    else:
-        verify_result = verify_token(firebase_token)
-
-        if verify_result is None:
-            return {"verify": False}
-
-        else:
-            uid, exp = verify_result
-
-            await createToken(firebase_token, int(exp), uid, rd)
-
-            return {"verify": True}
-
-
-@auth_router.delete("/revoke/{firebase_token}")
-async def revoke_token(firebase_token: str, rd=Depends(get_redis)):
-    check = await delToken(firebase_token, rd)
-    if check is True:
-        logger.info(f"// app.router.auth.route // token {firebase_token} is revoked")
-        return {"token": firebase_token}
-
-    else:
-        return HTTPException(417)
+# @auth_router.get("/verify/{firebase_token}", response_model=VerifyTokenResponse)
+# async def authorization(firebase_token: str, rd=Depends(get_redis)):
+#     cache_check = findByToken(firebase_token, rd)
+#
+#     if cache_check is True:
+#         return {"verify": True}
+#
+#     else:
+#         verify_result = verify_token(firebase_token)
+#
+#         if verify_result is None:
+#             return {"verify": False}
+#
+#         else:
+#             uid, exp = verify_result
+#
+#             await createToken(firebase_token, int(exp), uid, rd)
+#
+#             return {"verify": True}
+#
+#
+# @auth_router.delete("/revoke/{firebase_token}")
+# async def revoke_token(firebase_token: str, rd=Depends(get_redis)):
+#     check = await delToken(firebase_token, rd)
+#     if check is True:
+#         logger.info(f"// app.router.auth.route // token {firebase_token} is revoked")
+#         return {"token": firebase_token}
+#
+#     else:
+#         return HTTPException(417)
