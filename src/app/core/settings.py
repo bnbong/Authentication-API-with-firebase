@@ -1,8 +1,7 @@
 # --------------------------------------------------------------------------
 # Backend Application의 설정을 관리하는 파일입니다.
 #
-# 실제 환경에서는 .env 파일을 통해 설정을 관리하며,
-# 테스트 환경에서는 .env.test 파일을 통해 설정을 관리합니다.
+# .env 파일을 통해 설정을 관리합니다.
 #
 # @author bnbong bbbong9@gmail.com
 # --------------------------------------------------------------------------
@@ -27,6 +26,10 @@ class AppSettings(BaseSettings):
             "pool_pre_ping": True,
         },
         description="MariaDB option to create a connection.",
+    )
+    LOGGING_LEVEL: bool = Field(
+        default=False,
+        description="True: DEBUG mode, False:: INFO mode",
     )
 
     class ConfigDict:
