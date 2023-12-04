@@ -14,8 +14,16 @@ from pydantic_settings import BaseSettings
 
 
 class AppSettings(BaseSettings):
+    SECRET_KEY: str = Field(
+        default="HhingmORugetCchi?",
+        description="Secret key for JWT.",
+    )
+    JWT_ALGORITHM: str = Field(
+        default="AHNARLLYAJUM2048",
+        description="Algorithm for JWT.",
+    )
     DATABASE_URI: AnyUrl = Field(
-        default="mysql+aiomysql://bnbong:password@localhost:3307/auth-db",
+        default="mysql+aiomysql://bnbong:password@localhost:3306/auth",
         description="MariaDB connection URI.",
     )
     DATABASE_OPTIONS: Dict[str, Any] = Field(

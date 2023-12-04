@@ -107,7 +107,7 @@ async def auth(request: Request):
 
         logger.info(f"Firebase user logged in: UID={uid}, Email={user_email}")
 
-        return {"firebase_id_token": firebase_id_token}
+        return JSONResponse({"user_email": user_email, "firebase_id_token": firebase_id_token})
 
     except InvalidGrantError as exc:
         logger.info(
