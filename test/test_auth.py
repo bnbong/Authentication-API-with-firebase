@@ -1,3 +1,7 @@
+# TODO: 토큰 관련 테스트 코드 작성
+# Postman으로 토큰 관련 로직 작동 검증을 마쳤으나 토큰 기간 만료, 토큰 재발급 과정 테스트 케이스 작성 필요.
+
+
 # import pytest
 #
 # from conftest import testToken, testFakeToken, testUID

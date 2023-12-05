@@ -2,19 +2,18 @@ import os
 import json
 import secrets
 import logging
-import requests
 import base64
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import RedirectResponse, JSONResponse
 
-from firebase_admin import auth as firebase_auth
 import google_auth_oauthlib.flow
 
 from oauthlib.oauth2.rfc6749.errors import InvalidGrantError
 from firebase_admin.auth import UserNotFoundError
 from binascii import Error as binasciiError
 
+from app.crud.token import get_firebase_id_token_with_email
 
 from dotenv import load_dotenv
 
@@ -33,7 +32,11 @@ auth_router = APIRouter(prefix="/auth")
 # --------------------------------------------------------------------------
 # Google OAuth 로그인 및 Firebase ID 토큰 발급
 # --------------------------------------------------------------------------
-@auth_router.get("/login")
+@auth_router.get(
+    "/login",
+    summary="Google OAuth 로그인",
+    description="Google OAuth 로그인을 수행합니다. 로그인이 완료되면 /api/v1/auth/auth url로 리다이렉션됩니다.",
+)
 def login():
     client_id = os.getenv("GOOGLE_CLIENT_ID")
     redirect_uri = os.getenv("GOOGLE_REDIRECT_URI")
@@ -61,24 +64,11 @@ async def get_google_user_info(code: str):
     return credentials.id_token
 
 
-def create_firebase_custom_token(uid: str):
-    firebase_auth.get_user(uid)
-    firebase_custom_token = firebase_auth.create_custom_token(uid)
-    return firebase_custom_token
-
-
-async def get_firebase_id_token(firebase_custom_token: bytes):
-    firebase_api_key = os.getenv("FIREBASE_API_KEY")
-    request_data = {"token": firebase_custom_token, "returnSecureToken": True}
-    response = requests.post(
-        f"https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyCustomToken?key={firebase_api_key}",
-        data=request_data,
-    )
-    response_data = response.json()
-    return response_data.get("idToken")
-
-
-@auth_router.get("/auth")
+@auth_router.get(
+    "/auth",
+    summary="Google 로그인 정보를 바탕으로 Firebase ID 토큰 발급",
+    description="Google OAuth 로그인을 수행하면, Firebase ID 토큰을 발급받습니다.",
+)
 async def auth(request: Request):
     # URL 쿼리 파라미터에서 인증 코드 추출
     code = request.query_params.get("code")
@@ -93,21 +83,13 @@ async def auth(request: Request):
         )
         user_email = json.loads(decoded_token.decode("utf-8")).get("email")
 
-        # Firebase 커스텀 토큰 생성
-        firebase_user = firebase_auth.get_user_by_email(user_email)
-        uid = firebase_user.uid
-        firebase_custom_token = create_firebase_custom_token(uid)
-
-        # Firebase ID 토큰 반환
-        firebase_id_token = await get_firebase_id_token(firebase_custom_token)
-        if not firebase_id_token:
-            raise HTTPException(
-                status_code=500, detail="Failed to exchange custom token"
-            )
+        uid, firebase_id_token = await get_firebase_id_token_with_email(user_email)
 
         logger.info(f"Firebase user logged in: UID={uid}, Email={user_email}")
 
-        return JSONResponse({"user_email": user_email, "firebase_id_token": firebase_id_token})
+        return JSONResponse(
+            {"user_email": user_email, "firebase_id_token": firebase_id_token}
+        )
 
     except InvalidGrantError as exc:
         logger.info(
