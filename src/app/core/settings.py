@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from pydantic import AnyUrl, Field
-from pydantic_settings import BaseSettings
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class AppSettings(BaseSettings):
@@ -22,23 +22,9 @@ class AppSettings(BaseSettings):
         default="AHNARLLYAJUM2048",
         description="Algorithm for JWT.",
     )
-    DATABASE_URI: AnyUrl = Field(
-        default="mysql+aiomysql://bnbong:password@localhost:3306/auth",
-        description="MariaDB connection URI.",
-    )
-    DATABASE_OPTIONS: Dict[str, Any] = Field(
-        default={
-            "pool_size": 10,
-            "max_overflow": 20,
-            "pool_recycle": 300,
-            "pool_pre_ping": True,
-        },
-        description="MariaDB option to create a connection.",
-    )
     LOGGING_LEVEL: bool = Field(
         default=False,
         description="True: DEBUG mode, False:: INFO mode",
     )
 
-    class ConfigDict:
-        env_file = ".env"
+    model_config = SettingsConfigDict(env_file=".env.settings")

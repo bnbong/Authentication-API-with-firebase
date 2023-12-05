@@ -108,7 +108,6 @@ def generate_tokens(user_email: str, firebase_id_token: str) -> Tuple[str, str]:
         "iat": now,
         "exp": now + datetime.timedelta(hours=1),
     }
-    print("알고리즘:", app_settings.JWT_ALGORITHM)
     access_token = jwt.encode(
         access_token_payload,
         app_settings.SECRET_KEY,
