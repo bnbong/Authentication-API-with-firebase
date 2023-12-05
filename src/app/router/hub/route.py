@@ -17,6 +17,17 @@ hub_router = APIRouter(prefix="/hub/token")
 # --------------------------------------------------------------------------
 @hub_router.post(
     "/",
+    responses={
+        200: {
+            "content": {
+                "application/json": {
+                    "example": {
+                        "access_token": "tokentoken~~~",
+                    }
+                }
+            }
+        }
+    },
     summary="Google 로그인을 통해 발급받은 Firebase ID token을 이용하여 access token, refresh token 발급",
     description="클라이언트에서 Google OAuth2.0 로그인을 수행하면 Google OAuth2.0 인증 서버에서 발급받은 인증 코드를 이용하여 \
     Firebase ID token을 발급받습니다(/api/v1/auth/auth endpoint에서). 이 Firebase ID token을 이용하여 access token, refresh token을 발급받습니다.\
@@ -54,6 +65,17 @@ async def hub_issue_access_token_with_firebase_idtoken(
 
 @hub_router.post(
     "/refresh",
+    responses={
+        200: {
+            "content": {
+                "application/json": {
+                    "example": {
+                        "access_token": "tokentoken~~~",
+                    }
+                }
+            }
+        }
+    },
     summary="Refresh token을 이용하여 새로 access token 발급",
     description="Refresh token의 정보를 이용하여 새로 access token을 (firebase id token과 같이) 발급합니다.",
 )
@@ -83,6 +105,17 @@ async def hub_refresh_access_token(request: Request):
 
 @hub_router.post(
     "/revoke",
+    responses={
+        200: {
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Refresh token revoked successfully",
+                    }
+                }
+            }
+        }
+    },
     summary="access token, refresh token을 폐기.",
     description="클라이언트에서 로그아웃을 수행하면 cookie에 있는 refresh token을 폐기합니다. (access_token은 변수로 관리되니 제외)",
 )
@@ -93,6 +126,17 @@ async def hub_revoke_tokens(response: Response):
 
 @hub_router.get(
     "/verify",
+    responses={
+        200: {
+            "content": {
+                "application/json": {
+                    "example": {
+                        "firebase_id_token": "tokentoken~~~",
+                    }
+                }
+            }
+        }
+    },
     summary="access token을 검증.",
     description="access token을 검증하여 access token으로부터 firebase id token을 추출합니다.",
 )

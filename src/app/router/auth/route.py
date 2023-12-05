@@ -4,6 +4,8 @@ import secrets
 import logging
 import base64
 
+from typing import Tuple
+
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import RedirectResponse, JSONResponse
 
@@ -66,6 +68,18 @@ async def get_google_user_info(code: str):
 
 @auth_router.get(
     "/auth",
+    responses={
+        200: {
+            "content": {
+                "application/json": {
+                    "example": {
+                        "user_email": "example@testmail.com",
+                        "firebase_id_token": "tokentoken~~~"
+                    }
+                }
+            }
+        }
+    },
     summary="Google 로그인 정보를 바탕으로 Firebase ID 토큰 발급",
     description="Google OAuth 로그인을 수행하면, Firebase ID 토큰을 발급받습니다.",
 )
